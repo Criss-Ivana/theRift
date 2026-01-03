@@ -1,13 +1,21 @@
 use std::io;
 
 mod terminal;
+mod app;
 mod main_menu;
+mod play;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Screen {
+    MainMenu,
+    Playing,
+}
 
 fn main() -> io::Result<()> {
 
     let mut terminal = terminal::setup_terminal()?;
 
-    let res = main_menu::run_app(&mut terminal);
+    let res = app::run_app(&mut terminal);
 
     terminal::restore_terminal(&mut terminal)?;
     res
