@@ -9,6 +9,7 @@ mod play;
 pub enum Screen {
     MainMenu,
     Playing,
+    Quit,
 }
 
 fn main() -> io::Result<()> {
