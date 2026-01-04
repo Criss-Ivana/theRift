@@ -38,7 +38,7 @@ pub fn run_playing(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> io:
             return Ok(Screen::Quit);
         }
 
-        crate::screens::acts::act1::scene1::lesgo(terminal)?;
+        crate::screens::acts::act1::scene1::run_scene1(terminal)?;
 
         if let Event::Key(key) = event::read()? {
             if key.code == KeyCode::Esc {
