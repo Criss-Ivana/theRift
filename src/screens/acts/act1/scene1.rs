@@ -1,5 +1,4 @@
 use std::io;
-use std::fs;
 use ratatui::{
     backend::CrosstermBackend,
     layout::Rect,
@@ -8,11 +7,14 @@ use ratatui::{
     widgets::Paragraph,
     Terminal,
 };
+use std::collections::HashMap;
 
-fn load_car() -> Vec<String> {
-    let content = fs::read_to_string("assets/ascii/small_car.txt")
-        .expect("Failed to read small_car.txt");
-    content.lines().map(|line| line.to_string()).collect()
+fn assets_load() -> HashMap<String, Vec<String>> {
+    let ascii_files = vec![
+    "assets/small_car.txt".to_string()
+    ];
+    let ascii_assets = crate::utils::assets::load_ascii_art(ascii_files);
+    ascii_assets
 }
 
 fn render_car(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, car: &Vec<String>, x: u16, y: u16) -> io::Result<()> {
@@ -35,7 +37,8 @@ fn render_car(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, car: &Vec<S
 
 pub fn lesgo(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> io::Result<()>
 {
-    let car = load_car();
-    render_car(terminal, &car, 10, 5)?;
+    let ascii_assets = assets_load();
+
+    render_car(terminal, &ascii_assets["small_car"], 10, 5)?;
     Ok(())
 }
