@@ -24,3 +24,40 @@ pub fn load_ascii_art(paths: Vec<String>) -> HashMap<String, Vec<String>> {
 
     assets
 }
+
+pub enum AsciiOp {
+    PermutateLeft,
+    PermutateRight,
+    RepeatHorizontal(u16),
+}
+
+pub fn ascii_op(asset: &Vec<String>, op: AsciiOp) -> Vec<String> {
+    match op {
+        AsciiOp::PermutateLeft => {
+            let mut copy = asset.clone();
+            for line in copy.iter_mut() {
+                if let Some(first) = line.chars().next() {
+                    line.remove(0);
+                    line.push(first);
+                }
+            }
+            copy
+        }
+
+        AsciiOp::PermutateRight => {
+            let mut copy = asset.clone();
+            for line in copy.iter_mut() {
+                if let Some(last) = line.chars().last() {
+                    line.pop();
+                    line.insert(0, last);
+                }
+            }
+            copy
+        }
+
+        AsciiOp::RepeatHorizontal(n) => asset
+            .iter()
+            .map(|line| line.repeat(n as usize))
+            .collect(),
+    }
+}
