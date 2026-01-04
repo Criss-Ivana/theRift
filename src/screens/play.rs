@@ -4,16 +4,17 @@ use ratatui::{prelude::*, widgets::*};
 
 use crate::Screen;
 
+
 fn check_terminal_size(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> io::Result<bool> {
     loop {
         let (cols, rows) = terminal::size()?;
-        if cols >= 80 && rows >= 24 {
+        if cols >= 160 && rows >= 50 {
             return Ok(true);
         }
         
         terminal.draw(|frame| {
             let area = frame.size();
-            let text = format!("Terminal too small!\nCurrent: {}x{}\nMinimum required: 80x24\n\nPlease resize your terminal.\nPress 'q' to quit.", cols, rows);
+            let text = format!("Terminal too small!\nCurrent: {}x{}\nMinimum required: 80x24\n\nPlease resize your terminal window or zoom out with Ctrl + '-'.\nPress 'q' to quit.", cols, rows);
             let content = Paragraph::new(text)
                 .block(Block::default().borders(Borders::ALL).title("Error"))
                 .alignment(Alignment::Center)
@@ -37,15 +38,7 @@ pub fn run_playing(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> io:
             return Ok(Screen::Quit);
         }
 
-        terminal.draw(|frame| {
-            let area = frame.size();
-            let content = Paragraph::new("Playing... Press Esc to return").block(
-                Block::default()
-                    .title("Playing")
-                    .borders(Borders::ALL),
-            );
-            frame.render_widget(content, area);
-        })?;
+        crate::screens::acts::act1::scene1::lesgo(terminal)?;
 
         if let Event::Key(key) = event::read()? {
             if key.code == KeyCode::Esc {

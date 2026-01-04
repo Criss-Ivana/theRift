@@ -1,7 +1,7 @@
 use std::io;
 use ratatui::prelude::*;
 
-use crate::{main_menu::run_main_menu, play::run_playing, Screen};
+use crate::{screens::main_menu::run_main_menu, screens::play::run_playing, Screen};
 
 pub fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> io::Result<()> {
     let mut screen = Screen::MainMenu;

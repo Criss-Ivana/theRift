@@ -2,8 +2,7 @@ use std::io;
 
 mod terminal;
 mod app;
-mod main_menu;
-mod play;
+mod screens;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Screen {
