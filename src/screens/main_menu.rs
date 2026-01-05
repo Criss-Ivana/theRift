@@ -1,35 +1,41 @@
 use std::io;
 use crossterm::{event::{self, Event, KeyCode}, terminal};
-use ratatui::{prelude::*, widgets::*};
+use ratatui::{prelude::*, widgets::*, widgets::{Block, Borders}};
 
 use crate::Screen;
 
-fn check_terminal_size(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> io::Result<bool> {
-    loop {
-        let (cols, rows) = terminal::size()?;
-        if cols >= 160 && rows >= 50 {
-            return Ok(true);
-        }
-        
-        terminal.draw(|frame| {
-            let area = frame.size();
-            let text = format!("Terminal too small!\nCurrent: {}x{}\nMinimum required: 80x24\n\nPlease resize your terminal window or zoom out with Ctrl + '-'.\nPress 'q' to quit.", cols, rows);
-            let content = Paragraph::new(text)
-                .block(Block::default().borders(Borders::ALL).title("Error"))
-                .alignment(Alignment::Center)
-                .wrap(Wrap { trim: true });
-            frame.render_widget(content, area);
-        })?;
-        
-        //DEBUG
-        if event::poll(std::time::Duration::from_millis(100))? {
-            if let Event::Key(key) = event::read()? {
-                if key.code == KeyCode::Char('q') {
-                    return Ok(false);
-                }
-            }
-        }
+const VIEW_WIDTH: u16 = 160;
+const VIEW_HEIGHT: u16 = 50;
+
+fn viewport_rect(cols: u16, rows: u16) -> Option<Rect> {
+    if cols < VIEW_WIDTH || rows < VIEW_HEIGHT {
+        return None;
     }
+
+    Some(Rect {
+        x: (cols - VIEW_WIDTH) / 2,
+        y: (rows - VIEW_HEIGHT) / 2,
+        width: VIEW_WIDTH,
+        height: VIEW_HEIGHT,
+    })
+}
+
+fn terminal_size_error(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, cols: u16, rows: u16) -> io::Result<()> {
+    terminal.draw(|frame| {
+        let area = frame.size();
+        let text = format!(
+            "Terminal too small!\nCurrent: {}x{}\nMinimum required: {}x{}\n\nPlease resize your terminal window or zoom out with Ctrl + '-'.\nPress 'q' to quit.",
+            cols,
+            rows,
+            VIEW_WIDTH,
+            VIEW_HEIGHT,
+        );
+        let content = Paragraph::new(text)
+            .block(Block::default().borders(Borders::ALL).title("Error"))
+            .alignment(Alignment::Center)
+            .wrap(Wrap { trim: true });
+        frame.render_widget(content, area);
+    }).map(|_| ())
 }
 
 struct Menu {
@@ -92,38 +98,46 @@ pub fn run_main_menu(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> i
     let mut menu = Menu::new();
 
     loop {
-        if !check_terminal_size(terminal)? {
-            return Ok(Screen::Quit);
-        }
+        let (cols, rows) = terminal::size()?;
 
-        terminal.draw(|frame| {
-            let items: Vec<ListItem> = menu
-                .items
-                .iter()
-                .map(|i| ListItem::new(i.as_str()))
-                .collect();
+        if let Some(viewport) = viewport_rect(cols, rows) {
+            terminal.draw(|frame| {
+                let items: Vec<ListItem> = menu
+                    .items
+                    .iter()
+                    .map(|i| ListItem::new(i.as_str()))
+                    .collect();
 
-            let area = frame.size();
+                let list = List::new(items)
+                    .block(Block::default().title("Main Menu").borders(Borders::ALL))
+                    .highlight_style(Style::default().bg(Color::Blue))
+                    .highlight_symbol(">> ");
 
-            let list = List::new(items)
-                .block(Block::default().title("Main Menu").borders(Borders::ALL))
-                .highlight_style(Style::default().bg(Color::Blue))
-                .highlight_symbol(">> ");
+                frame.render_stateful_widget(list, viewport, &mut menu.state);
+            })?;
 
-            frame.render_stateful_widget(list, area, &mut menu.state);
-        })?;
-
-        if let Event::Key(key) = event::read()? {
-            let mut next_screen = Screen::MainMenu;
-            menu.handle_key(key.code, &mut next_screen);
-            
-            if next_screen != Screen::MainMenu {
-                return Ok(next_screen);
+            if let Event::Key(key) = event::read()? {
+                let mut next_screen = Screen::MainMenu;
+                menu.handle_key(key.code, &mut next_screen);
+                
+                if next_screen != Screen::MainMenu {
+                    return Ok(next_screen);
+                }
+                
+                //DEBUG
+                if key.code == KeyCode::Char('q') {
+                    return Ok(Screen::Quit);
+                }
             }
-            
-            //DEBUG
-            if key.code == KeyCode::Char('q') {
-                return Ok(Screen::Quit);
+        } else {
+            terminal_size_error(terminal, cols, rows)?;
+
+            if event::poll(std::time::Duration::from_millis(100))? {
+                if let Event::Key(key) = event::read()? {
+                    if key.code == KeyCode::Char('q') {
+                        return Ok(Screen::Quit);
+                    }
+                }
             }
         }
     }
