@@ -3,40 +3,7 @@ use crossterm::{event::{self, Event, KeyCode}, terminal};
 use ratatui::{prelude::*, widgets::*, widgets::{Block, Borders}};
 
 use crate::Screen;
-
-const VIEW_WIDTH: u16 = 160;
-const VIEW_HEIGHT: u16 = 50;
-
-fn viewport_rect(cols: u16, rows: u16) -> Option<Rect> {
-    if cols < VIEW_WIDTH || rows < VIEW_HEIGHT {
-        return None;
-    }
-
-    Some(Rect {
-        x: (cols - VIEW_WIDTH) / 2,
-        y: (rows - VIEW_HEIGHT) / 2,
-        width: VIEW_WIDTH,
-        height: VIEW_HEIGHT,
-    })
-}
-
-fn terminal_size_error(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, cols: u16, rows: u16) -> io::Result<()> {
-    terminal.draw(|frame| {
-        let area = frame.size();
-        let text = format!(
-            "Terminal too small!\nCurrent: {}x{}\nMinimum required: {}x{}\n\nPlease resize your terminal window or zoom out with Ctrl + '-'.\nPress 'q' to quit.",
-            cols,
-            rows,
-            VIEW_WIDTH,
-            VIEW_HEIGHT,
-        );
-        let content = Paragraph::new(text)
-            .block(Block::default().borders(Borders::ALL).title("Error"))
-            .alignment(Alignment::Center)
-            .wrap(Wrap { trim: true });
-        frame.render_widget(content, area);
-    }).map(|_| ())
-}
+use crate::terminal::{viewport_rect, terminal_size_error};
 
 struct Menu {
     items: Vec<String>,

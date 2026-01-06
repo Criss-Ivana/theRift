@@ -6,45 +6,11 @@ use ratatui::{
     layout::Rect,
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{Paragraph, Block, Borders},
-    prelude::Alignment,
+    widgets::{Paragraph, Block, Borders}
 };
 use std::collections::HashMap;
 use crate::utils::assets::{*,AsciiOp::*};
-
-const VIEW_WIDTH: u16 = 160;
-const VIEW_HEIGHT: u16 = 50;
-
-fn viewport_rect(cols: u16, rows: u16) -> Option<Rect> {
-    if cols < VIEW_WIDTH || rows < VIEW_HEIGHT {
-        return None;
-    }
-
-    Some(Rect {
-        x: (cols - VIEW_WIDTH) / 2,
-        y: (rows - VIEW_HEIGHT) / 2,
-        width: VIEW_WIDTH,
-        height: VIEW_HEIGHT,
-    })
-}
-
-fn terminal_size_error(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, cols: u16, rows: u16) -> io::Result<()> {
-    terminal.draw(|frame| {
-        let area = frame.size();
-        let text = format!(
-            "Terminal too small!\nCurrent: {}x{}\nMinimum required: {}x{}\n\nPlease resize your terminal window or zoom out with Ctrl + '-'.\nPress 'q' to quit.",
-            cols,
-            rows,
-            VIEW_WIDTH,
-            VIEW_HEIGHT,
-        );
-        let content = Paragraph::new(text)
-            .block(Block::default().borders(Borders::ALL).title("Error"))
-            .alignment(Alignment::Center)
-            .wrap(ratatui::widgets::Wrap { trim: true });
-        frame.render_widget(content, area);
-    }).map(|_| ())
-}
+use crate::terminal::{viewport_rect, terminal_size_error, VIEW_WIDTH, VIEW_HEIGHT};
 
 fn assets_load() -> HashMap<String, Vec<String>> {
     let ascii_files = vec![
@@ -78,12 +44,11 @@ fn car_driving(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, ascii_asse
 
     let mut fence = ascii_assets["fence"].clone();
 
-    let (mut cols, mut rows) = crossterm::terminal::size()?;
     let x = (VIEW_WIDTH - car_width) / 2;
     let mut y = (VIEW_HEIGHT - car_height) / 2;
 
     'drive: loop {
-        (cols, rows) = crossterm::terminal::size()?;
+        let (cols, rows) = crossterm::terminal::size()?;
 
         if let Some(viewport) = viewport_rect(cols, rows) {
             let fence_y_top = viewport.y + (viewport.height / 2).saturating_sub(6);
@@ -100,7 +65,6 @@ fn car_driving(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, ascii_asse
         } else {
             terminal_size_error(terminal, cols, rows)?;
         }
-
 
         // Reset pending events because the car had slippery physics lol
         let mut move_up = false;

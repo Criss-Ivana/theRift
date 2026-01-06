@@ -25,20 +25,20 @@ pub fn load_ascii_art(paths: Vec<String>) -> HashMap<String, Vec<String>> {
     assets
 }
 
+#[allow(dead_code)]
 pub enum AsciiOp {
     PermutateX(i16),
-    RepeatX(u16),
+    RepeatX(u16)
 }
 
 pub fn ascii_op(asset: &Vec<String>, op: AsciiOp) -> Vec<String> {
     match op {
         AsciiOp::PermutateX(n) => {
             let mut copy = asset.clone();
-            for line in copy.iter_mut() {
-                let len = line.chars().count() as i16;
-                let n = n % len;
-                if n > 0 {
-                    // scroll right
+            if n > 0 {
+                for line in copy.iter_mut() {
+                    let len = line.chars().count() as i16;
+                    let n = n % len;
                     let split = len - n;
                     let (left, right): (Vec<_>, Vec<_>) = line.chars()
                         .enumerate()
@@ -48,9 +48,12 @@ pub fn ascii_op(asset: &Vec<String>, op: AsciiOp) -> Vec<String> {
                         .chain(left.into_iter().map(|(_, c)| c))
                         .collect();
                     *line = new_line;
-                } else if n < 0 {
-                    // scroll left
-                    let n = -n;
+                }
+            } else if n < 0 {
+                let n = -n;
+                for line in copy.iter_mut() {
+                    let len = line.chars().count() as i16;
+                    let n = n % len;
                     let (left, right): (Vec<_>, Vec<_>) = line.chars()
                         .enumerate()
                         .partition(|(i, _)| (*i as i16) < n);
@@ -60,6 +63,7 @@ pub fn ascii_op(asset: &Vec<String>, op: AsciiOp) -> Vec<String> {
                         .collect();
                     *line = new_line;
                 }
+
             }
             copy
         }
