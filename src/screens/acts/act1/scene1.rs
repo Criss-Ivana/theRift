@@ -47,7 +47,8 @@ fn car_driving(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, ascii_asse
     let x = (VIEW_WIDTH - car_width) / 2;
     let mut y = (VIEW_HEIGHT - car_height) / 2;
 
-    'drive: loop {
+    let mut timer = 0;
+    'drive: while timer < 50 {
         let (cols, rows) = crossterm::terminal::size()?;
 
         if let Some(viewport) = viewport_rect(cols, rows) {
@@ -85,10 +86,57 @@ fn car_driving(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, ascii_asse
             }
         }
 
-        if move_up && y > 0 {
+        if move_up && y > 1 {
             y -= 1;
         }
-        if move_down && y + car_height < rows {
+        if move_down && y + car_height < rows - 1 {
+            y += 1;
+        }
+
+        fence = ascii_op(&fence, PermutateX(-1));
+
+        thread::sleep(Duration::from_millis(50));
+
+        timer += 1;
+    }
+
+    timer = 0;
+    'drive: while timer < 50 {
+        let (cols, rows) = crossterm::terminal::size()?;
+
+        if let Some(viewport) = viewport_rect(cols, rows) {
+            let fence_y_top = viewport.y + (viewport.height / 2).saturating_sub(6);
+            let fence_y_bottom = viewport.y + viewport.height / 2 + 6;
+
+            terminal.draw(|f| {
+                let border = Block::default().borders(Borders::ALL).title("Game");
+                f.render_widget(border, viewport);
+
+                render_asset(f, &fence, viewport.x + 1, fence_y_top);
+                render_asset(f, &fence, viewport.x + 1, fence_y_bottom);
+                render_asset(f, &car, viewport.x + x, viewport.y + y);
+            })?;
+        } else {
+            terminal_size_error(terminal, cols, rows)?;
+        }
+
+        while event::poll(Duration::from_millis(0))? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind != KeyEventKind::Press {
+                    continue;
+                }
+
+                match key.code {
+                    KeyCode::Esc => break 'drive,
+                    _ => {}
+                }
+            }
+        }
+
+        if y > (VIEW_HEIGHT - car_height) / 2 + 1{
+            y -= 1;
+        }
+        else if y < (VIEW_HEIGHT - car_height) / 2 + 1{
             y += 1;
         }
 
@@ -96,6 +144,51 @@ fn car_driving(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, ascii_asse
 
         thread::sleep(Duration::from_millis(50));
     }
+
+    'drive: while timer < 50 {
+        let (cols, rows) = crossterm::terminal::size()?;
+
+        if let Some(viewport) = viewport_rect(cols, rows) {
+            let fence_y_top = viewport.y + (viewport.height / 2).saturating_sub(6);
+            let fence_y_bottom = viewport.y + viewport.height / 2 + 6;
+
+            terminal.draw(|f| {
+                let border = Block::default().borders(Borders::ALL).title("Game");
+                f.render_widget(border, viewport);
+
+                render_asset(f, &fence, viewport.x + 1, fence_y_top);
+                render_asset(f, &fence, viewport.x + 1, fence_y_bottom);
+                render_asset(f, &car, viewport.x + x, viewport.y + y);
+            })?;
+        } else {
+            terminal_size_error(terminal, cols, rows)?;
+        }
+
+        while event::poll(Duration::from_millis(0))? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind != KeyEventKind::Press {
+                    continue;
+                }
+
+                match key.code {
+                    KeyCode::Esc => break 'drive,
+                    _ => {}
+                }
+            }
+        }
+
+        if y > (VIEW_HEIGHT - car_height) / 2 + 1{
+            y -= 1;
+        }
+        else if y < (VIEW_HEIGHT - car_height) / 2 + 1{
+            y += 1;
+        }
+
+        fence = ascii_op(&fence, PermutateX(-1));
+
+        thread::sleep(Duration::from_millis(50));
+    }
+
 
     Ok(())
 }
