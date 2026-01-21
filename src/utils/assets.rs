@@ -28,7 +28,8 @@ pub fn load_ascii_art(paths: Vec<String>) -> HashMap<String, Vec<String>> {
 #[allow(dead_code)]
 pub enum AsciiOp {
     PermutateX(i16),
-    RepeatX(u16)
+    RepeatX(u16),
+    SliceX(usize,usize),
 }
 
 pub fn ascii_op(asset: &Vec<String>, op: AsciiOp) -> Vec<String> {
@@ -71,5 +72,14 @@ pub fn ascii_op(asset: &Vec<String>, op: AsciiOp) -> Vec<String> {
             .iter()
             .map(|line| line.repeat(n as usize))
             .collect(),
+        AsciiOp::SliceX(start,end) => {
+            let mut copy = asset.clone();
+            for line in copy.iter_mut(){
+                if let Some(slice) = line.get(start..end) {
+                    *line = slice.to_string();
+                }
+            }
+            copy
+        }
     }
 }

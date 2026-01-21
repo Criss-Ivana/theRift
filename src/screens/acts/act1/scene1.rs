@@ -16,12 +16,13 @@ fn assets_load() -> HashMap<String, Vec<String>> {
     let ascii_files = vec![
     "assets/small_car.txt".to_string(),
     "assets/fence.txt".to_string(),
+    "assets/house.txt".to_string(),
     ];
     let ascii_assets = crate::utils::assets::load_ascii_art(ascii_files);
     ascii_assets
 }
 
-fn render_asset(f: &mut ratatui::Frame, asset: &Vec<String>, x: u16, y: u16) {
+fn render_asset(f: &mut ratatui::Frame, asset: &Vec<String>, x: u16, y: u16, color: Option<Color>) {
     let width = asset.iter().map(|line| line.len()).max().unwrap_or(1) as u16;
     let height = asset.len() as u16;
     let area = Rect { x, y, width, height };
@@ -30,9 +31,8 @@ fn render_asset(f: &mut ratatui::Frame, asset: &Vec<String>, x: u16, y: u16) {
         .iter()
         .map(|line| Line::from(Span::raw(line)))
         .collect();
-
-    let paragraph = Paragraph::new(lines)
-        .style(Style::default().fg(Color::Yellow));
+    let style = Style::default().fg(color.unwrap_or(Color::White));
+    let paragraph = Paragraph::new(lines).style(style);
 
     f.render_widget(paragraph, area);
 }
@@ -43,6 +43,8 @@ fn car_driving(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, ascii_asse
     let car_width = car.iter().map(|line| line.len()).max().unwrap_or(1) as u16;
 
     let mut fence = ascii_assets["fence"].clone();
+
+    let house = ascii_assets["house"].clone();
 
     let x = (VIEW_WIDTH - car_width) / 2;
     let mut y = (VIEW_HEIGHT - car_height) / 2;
@@ -59,9 +61,9 @@ fn car_driving(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, ascii_asse
                 let border = Block::default().borders(Borders::ALL).title("Game");
                 f.render_widget(border, viewport);
 
-                render_asset(f, &fence, viewport.x + 1, fence_y_top);
-                render_asset(f, &fence, viewport.x + 1, fence_y_bottom);
-                render_asset(f, &car, viewport.x + x, viewport.y + y);
+                render_asset(f, &fence, viewport.x + 1, fence_y_top, Some(Color::Yellow));
+                render_asset(f, &fence, viewport.x + 1, fence_y_bottom, Some(Color::Yellow));
+                render_asset(f, &car, viewport.x + x, viewport.y + y, Some(Color::Yellow));
             })?;
         } else {
             terminal_size_error(terminal, cols, rows)?;
@@ -112,9 +114,9 @@ fn car_driving(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, ascii_asse
                 let border = Block::default().borders(Borders::ALL).title("Game");
                 f.render_widget(border, viewport);
 
-                render_asset(f, &fence, viewport.x + 1, fence_y_top);
-                render_asset(f, &fence, viewport.x + 1, fence_y_bottom);
-                render_asset(f, &car, viewport.x + x, viewport.y + y);
+                render_asset(f, &fence, viewport.x + 1, fence_y_top, Some(Color::Yellow));
+                render_asset(f, &fence, viewport.x + 1, fence_y_bottom, Some(Color::Yellow));
+                render_asset(f, &car, viewport.x + x, viewport.y + y, Some(Color::Yellow));
             })?;
         } else {
             terminal_size_error(terminal, cols, rows)?;
@@ -133,19 +135,23 @@ fn car_driving(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, ascii_asse
             }
         }
 
-        if y > (VIEW_HEIGHT - car_height) / 2 + 1{
+        if y > (VIEW_HEIGHT - car_height) / 2{
             y -= 1;
         }
-        else if y < (VIEW_HEIGHT - car_height) / 2 + 1{
+        else if y < (VIEW_HEIGHT - car_height) / 2{
             y += 1;
         }
 
         fence = ascii_op(&fence, PermutateX(-1));
 
         thread::sleep(Duration::from_millis(50));
+        timer += 1;
     }
-
-    'drive: while timer < 50 {
+    
+    let mut house_aux = ascii_op(&house, SliceX(0,1));
+    let mut house_x = VIEW_WIDTH - 2;
+    timer = 0;
+    'drive: while timer < 75 {
         let (cols, rows) = crossterm::terminal::size()?;
 
         if let Some(viewport) = viewport_rect(cols, rows) {
@@ -156,9 +162,10 @@ fn car_driving(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, ascii_asse
                 let border = Block::default().borders(Borders::ALL).title("Game");
                 f.render_widget(border, viewport);
 
-                render_asset(f, &fence, viewport.x + 1, fence_y_top);
-                render_asset(f, &fence, viewport.x + 1, fence_y_bottom);
-                render_asset(f, &car, viewport.x + x, viewport.y + y);
+                render_asset(f, &fence, viewport.x + 1, fence_y_top, Some(Color::Yellow));
+                render_asset(f, &fence, viewport.x + 1, fence_y_bottom, Some(Color::Yellow));
+                render_asset(f, &car, viewport.x + x, viewport.y + y, Some(Color::Yellow));
+                render_asset(f, &house_aux, viewport.x + house_x, viewport.y + 2, Some(Color::Blue));
             })?;
         } else {
             terminal_size_error(terminal, cols, rows)?;
@@ -177,18 +184,14 @@ fn car_driving(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, ascii_asse
             }
         }
 
-        if y > (VIEW_HEIGHT - car_height) / 2 + 1{
-            y -= 1;
-        }
-        else if y < (VIEW_HEIGHT - car_height) / 2 + 1{
-            y += 1;
-        }
-
         fence = ascii_op(&fence, PermutateX(-1));
 
+        house_aux = ascii_op(&house, SliceX(0,timer+2));
+        house_x -= 1;
+        
         thread::sleep(Duration::from_millis(50));
+        timer += 1;
     }
-
 
     Ok(())
 }
